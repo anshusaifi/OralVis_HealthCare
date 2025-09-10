@@ -1,0 +1,59 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# VS Code settings
+.vscode/
+.history/
+
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+dist/
+build/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+venv/
+.envrc
+
+# Java
+*.class
+*.jar
+*.war
+*.ear
+target/
+
+# C / C++
+*.o
+*.out
+*.exe
+
+# Logs
+*.log
+logs/
+debug.log
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+*.bak
+
+# Environment & secrets
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDEs
+.idea/
+*.iml
+
+# MacOS
+*.DS_Store
