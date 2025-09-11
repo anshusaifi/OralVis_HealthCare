@@ -1,55 +1,60 @@
-import { useState,useEffect} from "react";
+import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import axios from "axios";
-
-
-
 
 export default function PatientSubmissionForm() {
   const [name, setName] = useState("");
   const [patientId, setPatientId] = useState("");
   const [email, setEmail] = useState("");
   const [note, setNote] = useState("");
-  const [files, setFile] = useState([]);
+  const [files, setFiles] = useState([]);
 
   const user = useSelector((state) => state.auth);
-  const { firstName, lastName, email:userEmail, patientId:userPatientId, isLoggedIn } = user;
+  const {
+    firstName,
+    lastName,
+    email: userEmail,
+    patientId: userPatientId,
+    isLoggedIn,
+  } = user;
+
+  // Auto-fill on login
   useEffect(() => {
-    if (isLoggedIn && firstName && userEmail && userPatientId) {
+    if (isLoggedIn) {
       setName(`${firstName} ${lastName}`.trim());
       setEmail(userEmail);
       setPatientId(userPatientId);
     }
   }, [firstName, lastName, userEmail, userPatientId, isLoggedIn]);
-  console.log("ye user hai from redux");
-  console.log(user);
+
   const handleFileChange = (e) => {
-    setFile(Array.from(e.target.files));
+    setFiles(Array.from(e.target.files));
   };
 
-  const handleSubmit = async(e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-   
 
-   const formData = new FormData();
-  formData.append("name",firstName);
-  formData.append("patientId", userPatientId);
-  formData.append("email", userEmail);
-  formData.append("note", note);
+    const formData = new FormData();
+    formData.append("name", name);
+    formData.append("patientId", patientId);
+    formData.append("email", email);
+    formData.append("note", note);
 
-  files.forEach((file) => {
-    formData.append("images", file); // "images" should match backend field name
-  });
+    files.forEach((file) => formData.append("images", file));
 
-  try {
-    const res = await axios.post("http://localhost:8080/api/submissions", formData, {
-  withCredentials: true, // send cookies if backend uses cookie auth
-});
-    console.log("Submission success:", res.data);
-  } catch (err) {
-    console.log("inside frontend axios error catch block")
-    console.error(err);
-  }
+    try {
+      const res = await axios.post(
+        "http://localhost:8080/api/submissions",
+        formData,
+        {
+          withCredentials: true,
+        }
+      );
+      window.location.reload();
+      console.log("Submission success:", res.data);
+    } catch (err) {
+      console.error("Submission error:", err);
+    }
   };
 
   return (
@@ -66,25 +71,25 @@ export default function PatientSubmissionForm() {
           type="text"
           placeholder="Name"
           value={name}
-         
+          onChange={(e) => setName(e.target.value)}
           required
           className="w-full p-2 border border-gray-300 rounded-lg focus:ring focus:ring-blue-300"
         />
 
         <input
-          type="text"
-          placeholder="Patient ID"
-          value={patientId}
-          
-          required
-          className="w-full p-2 border border-gray-300 rounded-lg focus:ring focus:ring-blue-300"
-        />
+  type="text"
+  placeholder="Patient ID"
+  value={patientId}           // ✅ bind to local state
+  onChange={(e) => setPatientId(e.target.value)}
+  required
+  className="w-full p-2 border border-gray-300 rounded-lg focus:ring focus:ring-blue-300"
+/>
 
         <input
           type="email"
           placeholder="Email"
           value={email}
-          
+          onChange={(e) => setEmail(e.target.value)}
           required
           className="w-full p-2 border border-gray-300 rounded-lg focus:ring focus:ring-blue-300"
         />
@@ -93,7 +98,6 @@ export default function PatientSubmissionForm() {
           placeholder="Note"
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          required
           className="w-full p-2 border border-gray-300 rounded-lg focus:ring focus:ring-blue-300"
         />
 
@@ -102,7 +106,6 @@ export default function PatientSubmissionForm() {
           accept="image/*"
           multiple
           onChange={handleFileChange}
-          required
           className="w-full"
         />
 

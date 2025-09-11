@@ -29,7 +29,7 @@ export default function Login() {
 
         const { role, firstName, lastName, patientId } = res.data.data;
         
-        console.log(res.data.data);
+        console.log("hhaha",res.data);
 
         dispatch(
           setAuth({
@@ -42,6 +42,7 @@ export default function Login() {
         );
         console.log(res);
         console.log(role);
+        console.log(patientId);
 
         // Redirect based on role
         if (role === "admin") navigate("/admin");
@@ -60,7 +61,16 @@ export default function Login() {
         note,
         file,
       });
-      // call /auth/register API
+      try {
+        const res = await axios.post(
+          "http://localhost:8080/api/signup",
+          { email, password,firstName,lastName,note},
+          { withCredentials: true } // important for cookies
+        );
+        setIsLoginForm(true);
+      } catch (error) {
+        console.log(error)
+      }
     }
   };
 

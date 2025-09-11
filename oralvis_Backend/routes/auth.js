@@ -5,9 +5,9 @@ const bcrypt = require("bcrypt");
 const {validateSignupData} = require("../utils/Validate");
 const { nanoid } = require("nanoid");
 
-
+ 
 authRouter.post("/login", async (req, res) => {
-  try {
+  try { 
     const { email, password } = req.body;
     const user = await User.findOne({ email: email });
     console.log(user);
@@ -78,6 +78,15 @@ authRouter.post("/signup", async (req, res) => {
   } catch (error) {
     res.status(400).send("error" + error.message);
   }
+});
+
+
+authRouter.post("/logout", async (req, res) => {
+  res.cookie("token", null),
+    {
+      expires: new Date(Date.now()),
+    };
+  res.send("User logout");
 });
 
 module.exports = authRouter;

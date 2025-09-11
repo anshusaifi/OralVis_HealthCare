@@ -32,7 +32,7 @@ const userSchema = mongoose.Schema(
     patientId: {
       type: String,
       unique: true,
-      sparse: true, // allows admins to not have patientId
+       // allows admins to not have patientId
     },
 
     role: { 

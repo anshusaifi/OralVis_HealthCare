@@ -31,7 +31,8 @@ const submissionSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.Mixed, // JSON of annotations (shapes, coords, etc.)
     },
     reportUrl: {
-      type: String, // PDF file path or S3 URL
+      type: String, 
+      default : null// PDF file path or S3 URL
     },
     status: {
       type: String,
