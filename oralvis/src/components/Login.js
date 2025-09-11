@@ -1,4 +1,8 @@
 import { useState } from "react";
+import axios from "axios";
+import { useDispatch } from "react-redux";
+import { setAuth } from "../redux/slices/authSlice"
+import { useNavigate } from "react-router-dom";
 
 export default function Login() {
   const [email, setEmailId] = useState("");
@@ -9,17 +13,43 @@ export default function Login() {
   const [file, setFile] = useState(null);
   const [isLoginForm, setIsLoginForm] = useState(true);
 
-  const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
-  };
-
-  const handleSubmit = (e) => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (isLoginForm) {
       // Login
-      console.log("Login with:", { email, password });
-      // call /auth/login API
+      try {
+        const res = await axios.post(
+          "http://localhost:8080/api/login",
+          { email, password },
+          { withCredentials: true } // important for cookies
+        );
+
+        const { role, firstName, lastName, patientId } = res.data.data;
+        
+        console.log(res.data.data);
+
+        dispatch(
+          setAuth({
+            firstName,
+            lastName,
+            email,
+            role,
+            patientId,
+          })
+        );
+        console.log(res);
+        console.log(role);
+
+        // Redirect based on role
+        if (role === "admin") navigate("/admin");
+        else navigate("/patient");
+      } catch (error) {
+        console.error(error);
+        alert(error.response?.data || "Login failed");
+      }
     } else {
       // Signup (Patient Registration)
       console.log("Signup with:", {
@@ -90,13 +120,6 @@ export default function Login() {
               value={note}
               onChange={(e) => setNote(e.target.value)}
               className="w-full p-2 border border-gray-300 rounded-lg focus:ring focus:ring-blue-300"
-            />
-
-            <input
-              type="file"
-              onChange={handleFileChange}
-              accept="image/*"
-              className="w-full p-2 border border-gray-300 rounded-lg file:mr-2 file:py-1 file:px-3 file:border-0 file:text-sm file:font-semibold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200"
             />
           </>
         )}

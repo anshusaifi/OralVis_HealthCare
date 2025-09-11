@@ -1,33 +1,37 @@
-// models/Submission.js
 const mongoose = require("mongoose");
 
 const submissionSchema = new mongoose.Schema(
   {
-    patient: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User", // links to the patient who submitted
-      required: true,
-    },
     patientId: {
       type: String,
-      required: true, // auto-generated at registration
+      required: true,
+    },
+    name: {
+      type: String,
+      required: true,
+    },
+    email: {
+      type: String,
+      required: true,
+      lowercase: true,
+      trim: true,
     },
     note: {
       type: String,
-      required: true, // patient’s description of the problem
+      required: true,
     },
-    imageUrl: {
-      type: String,
-      required: true, // path/URL of uploaded teeth photo
-    },
+    images: [{
+      type: String, // Path or S3 URL
+      required: true,
+    }],
     annotatedImageUrl: {
-      type: String, // URL of image after admin annotation
+      type: String, // Optional: saved after admin annotates
     },
     annotationData: {
-      type: Object, // JSON data of shapes/lines admin drew
+      type: mongoose.Schema.Types.Mixed, // JSON of annotations (shapes, coords, etc.)
     },
     reportUrl: {
-      type: String, // PDF report URL
+      type: String, // PDF file path or S3 URL
     },
     status: {
       type: String,
@@ -35,7 +39,7 @@ const submissionSchema = new mongoose.Schema(
       default: "uploaded",
     },
   },
-  { timestamps: true } // adds createdAt and updatedAt
+  { timestamps: true }
 );
 
 module.exports = mongoose.model("Submission", submissionSchema);
