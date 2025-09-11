@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 export default function LogoutButton() {
+  const BASE_URL = process.env.REACT_APP_BASE_URL;
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const isLoggedIn = useSelector((state) => state.auth.isLoggedIn);
@@ -11,7 +12,7 @@ export default function LogoutButton() {
   const handleLogout = async () => {
     try {
       // Optionally clear cookie/session on backend
-      await axios.post("http://localhost:8080/api/logout", {}, { withCredentials: true });
+      await axios.post(BASE_URL+"logout", {}, { withCredentials: true });
 
       // Reset Redux auth state
       dispatch(logout());

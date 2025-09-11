@@ -4,6 +4,8 @@ import axios from "axios";
 import { ReactSketchCanvas } from "react-sketch-canvas";
 
 function AdminReview() {
+  const BASE_URL = process.env.REACT_APP_BASE_URL;
+  const HALF_URL=  process.env.REACT_APP_HALF_URL;
   const { id } = useParams();
   const [submission, setSubmission] = useState(null);
   const canvasRef = useRef();
@@ -14,7 +16,7 @@ function AdminReview() {
     async function fetchSubmission() {
       try {
         const res = await axios.get(
-          `http://localhost:8080/api/admin/submissions/${id}`,
+          `${BASE_URL}/admin/submissions/${id}`,
           { withCredentials: true }
         );
         setSubmission(res.data.data);
@@ -32,7 +34,7 @@ function AdminReview() {
 
     try {
       await axios.post(
-        `http://localhost:8080/api/admin/submissions/${id}/annotate`,
+        `${BASE_URL}/admin/submissions/${id}/annotate`,
         { annotationJson: annotationData, annotatedImage },
         { withCredentials: true }
       );
@@ -41,7 +43,7 @@ function AdminReview() {
 
       // Refresh submission so updated status comes in
       const updated = await axios.get(
-        `http://localhost:8080/api/admin/submissions/${id}`,
+        `${BASE_URL}/admin/submissions/${id}`,
         { withCredentials: true }
       );
       setSubmission(updated.data.data);
@@ -55,7 +57,7 @@ function AdminReview() {
   const handleGenerateReport = async () => {
     try {
       const res = await axios.get(
-        `http://localhost:8080/api/admin/submissions/${id}/report`,
+        `${BASE_URL}/admin/submissions/${id}/report`,
         {
           withCredentials: true,
           responseType: "blob", // important to handle PDF
@@ -94,7 +96,7 @@ function AdminReview() {
         <h3 className="text-lg font-semibold mb-2">Original Image</h3>
         {submission.images?.length > 0 && (
           <img
-            src={`http://localhost:8080/${submission.images[0]}`}
+            src={`${HALF_URL}/${submission.images[0]}`}
             alt="Original"
             className="max-w-md border rounded-lg shadow"
           />
@@ -110,7 +112,7 @@ function AdminReview() {
           height="400px"
           strokeWidth={4}
           strokeColor="red"
-          backgroundImage={`http://localhost:8080/${submission.images[0]}`}
+          backgroundImage={`${HALF_URL}/${submission.images[0]}`}
         />
 
         <div className="flex gap-4 mt-4">

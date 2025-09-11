@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 
 function SubmissionRecords() {
+  const BASE_URL = process.env.REACT_APP_BASE_URL;
+  const HALF_URL=  process.env.REACT_APP_HALF_URL;
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [downloadingReport, setDownloadingReport] = useState(null);
@@ -10,7 +12,7 @@ function SubmissionRecords() {
     const fetchRecords = async () => {
       try {
         setLoading(true);
-        const res = await axios.get("http://localhost:8080/api/mine", {
+        const res = await axios.get(BASE_URL+"/mine", {
           withCredentials: true,
         });
 
@@ -31,7 +33,7 @@ function SubmissionRecords() {
       setDownloadingReport(recordId);
       
       const response = await axios.post(
-        `http://localhost:8080/api/admin/submissions/report/${recordId}`,
+        `${BASE_URL}/admin/submissions/report/${recordId}`,
         {},
         {
           withCredentials: true,
@@ -150,7 +152,7 @@ function SubmissionRecords() {
               {record.images && record.images.length > 0 && (
                 <div className="mb-4">
                   <img
-                    src={`http://localhost:8080/${record.images[0]}`}
+                    src={`${HALF_URL}/${record.images[0]}`}
                     alt="submission"
                     className="h-32 w-full object-cover rounded-lg border"
                     onError={(e) => {

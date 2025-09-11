@@ -3,6 +3,7 @@ import { useSelector } from "react-redux";
 import axios from "axios";
 
 export default function PatientSubmissionForm() {
+  const BASE_URL = process.env.REACT_APP_BASE_URL;
   const [name, setName] = useState("");
   const [patientId, setPatientId] = useState("");
   const [email, setEmail] = useState("");
@@ -44,7 +45,7 @@ export default function PatientSubmissionForm() {
 
     try {
       const res = await axios.post(
-        "http://localhost:8080/api/submissions",
+        BASE_URL+"/submissions",
         formData,
         {
           withCredentials: true,

@@ -3,6 +3,7 @@ import axios from "axios";
 import { Link } from "react-router-dom";
 
 export default function AdminDashboard() {
+  const BASE_URL = process.env.REACT_APP_BASE_URL;
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -10,7 +11,7 @@ export default function AdminDashboard() {
     const fetchSubmissions = async () => {
       try {
         const res = await axios.get(
-          "http://localhost:8080/api/admin/submission",
+          BASE_URL+"/admin/submission",
           {
             withCredentials: true,
           }
@@ -94,7 +95,7 @@ export default function AdminDashboard() {
                         onClick={async () => {
                           try {
                             const res = await axios.post(
-                              `http://localhost:8080/api/admin/submissions/report/${sub._id}`,
+                              `${BASE_URL}/admin/submissions/report/${sub._id}`,
                               {}, // no request body
                               {
                                 withCredentials: true,
