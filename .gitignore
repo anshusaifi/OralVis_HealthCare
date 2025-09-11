@@ -8,6 +8,8 @@ Thumbs.db
 
 # Node.js
 node_modules/
+oralvis/node_modules
+oralvis_Backend/node_modules
 npm-debug.log
 yarn-error.log
 dist/

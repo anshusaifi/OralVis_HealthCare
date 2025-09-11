@@ -5,14 +5,23 @@ const submissionRouter = require("./routes/submission")
 const cookieParser = require("cookie-parser"); 
 const cors = require("cors");
 const path = require("path");
+const dotenv = require("dotenv");
 const fs = require("fs");
-
+dotenv.config();
 const app = express();
 const PORT = 8080;
 
 const uploadsDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir);
+}
+
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname, "../frontend/build")));
+
+  app.get("*", (req, res) => {
+    res.sendFile(path.resolve(__dirname, "../frontend", "build", "index.html"));
+  });
 }
 
 // Serve uploaded images

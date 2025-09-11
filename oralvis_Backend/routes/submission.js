@@ -191,8 +191,8 @@ submissionRouter.post("/admin/submissions/report/:id", userAuth, async (req, res
     const fileName = `${submission.patientId || submission._id}_report.pdf`;
     const filePath = path.join(reportsDir, fileName);
 
-    // Create PDF
-    const doc = new PDFDocument({ size: "A4", margin: 50 });
+    // Create PDF with single page constraint
+    const doc = new PDFDocument({ size: "A4", margin: 40 }); // Reduced margin for more space
     
     // Set response headers for file download
     res.setHeader('Content-Type', 'application/pdf');
@@ -201,15 +201,34 @@ submissionRouter.post("/admin/submissions/report/:id", userAuth, async (req, res
     // Pipe directly to response for download
     doc.pipe(res);
 
-    // --- Header with Logo/Branding (Optional) ---
-    doc.fontSize(20).font('Helvetica-Bold').text("Oral Health Screening Report", { align: "center" });
-    doc.moveDown(0.5);
-    doc.fontSize(10).font('Helvetica').text("Professional Dental Analysis", { align: "center" });
-    doc.moveDown(2);
+    // Calculate available page dimensions
+    const pageWidth = 595.28; // A4 width in points
+    const pageHeight = 841.89; // A4 height in points
+    const margin = 40;
+    const contentWidth = pageWidth - (margin * 2);
+    const contentHeight = pageHeight - (margin * 2);
 
-    // --- Patient Details Section ---
-    doc.fontSize(14).font('Helvetica-Bold').text("Patient Information", { underline: true });
-    doc.moveDown(0.5);
+    let currentY = margin;
+
+    // --- Header Section (Compact) ---
+    doc.fontSize(18).font('Helvetica-Bold')
+       .text("Oral Health Screening Report", margin, currentY, { 
+         align: "center",
+         width: contentWidth 
+       });
+    currentY += 25;
+    
+    doc.fontSize(9).font('Helvetica')
+       .text("Professional Dental Analysis", margin, currentY, { 
+         align: "center",
+         width: contentWidth 
+       });
+    currentY += 20;
+
+    // --- Patient Details Section (Compact) ---
+    doc.fontSize(12).font('Helvetica-Bold')
+       .text("Patient Information", margin, currentY);
+    currentY += 15;
     
     const reportDate = new Date().toLocaleDateString('en-US', {
       year: 'numeric',
@@ -217,25 +236,45 @@ submissionRouter.post("/admin/submissions/report/:id", userAuth, async (req, res
       day: 'numeric'
     });
     
-    doc.fontSize(11).font('Helvetica');
-    doc.text(`Patient ID: ${submission.patientId || 'N/A'}`, 50, doc.y);
-    doc.text(`Name: ${submission.name || 'N/A'}`, 50, doc.y + 15);
-    doc.text(`Email: ${submission.email || 'N/A'}`, 50, doc.y + 15);
-    doc.text(`Report Date: ${reportDate}`, 50, doc.y + 15);
-    doc.text(`Status: ${submission.status || 'N/A'}`, 50, doc.y + 15);
+    doc.fontSize(9).font('Helvetica');
+    
+    // Patient info in two columns to save space
+    const leftColumnX = margin;
+    const rightColumnX = margin + (contentWidth / 2);
+    
+    doc.text(`Patient ID: ${submission.patientId || 'N/A'}`, leftColumnX, currentY);
+    doc.text(`Report Date: ${reportDate}`, rightColumnX, currentY);
+    currentY += 12;
+    
+    doc.text(`Name: ${submission.name || 'N/A'}`, leftColumnX, currentY);
+    doc.text(`Status: ${submission.status || 'N/A'}`, rightColumnX, currentY);
+    currentY += 12;
+    
+    doc.text(`Email: ${submission.email || 'N/A'}`, leftColumnX, currentY);
+    currentY += 15;
     
     if (submission.note && submission.note.trim()) {
-      doc.text(`Note: ${submission.note}`, 50, doc.y + 15);
+      // Limit note length to fit on one page
+      const maxNoteLength = 100;
+      const truncatedNote = submission.note.length > maxNoteLength 
+        ? submission.note.substring(0, maxNoteLength) + "..."
+        : submission.note;
+      
+      doc.text(`Note: ${truncatedNote}`, margin, currentY, { width: contentWidth });
+      currentY += 15;
     }
-    
-    doc.moveDown(2);
 
-    // --- Annotated Image Section ---
-    doc.fontSize(14).font('Helvetica-Bold').text("Clinical Analysis", { underline: true });
-    doc.moveDown(1);
+    // --- Annotated Image Section (Optimized Size) ---
+    doc.fontSize(12).font('Helvetica-Bold')
+       .text("Clinical Analysis", margin, currentY);
+    currentY += 15;
+
+    // Calculate remaining space for image and legend
+    const remainingHeight = contentHeight - (currentY - margin) - 180; // Reserve 180pt for legend and footer
+    const maxImageHeight = Math.min(remainingHeight, 250); // Max 250pt for image
+    const maxImageWidth = contentWidth - 20; // Leave some padding
 
     if (submission.annotatedImageUrl) {
-      // Handle different path formats
       let imgPath;
       if (submission.annotatedImageUrl.startsWith('uploads/')) {
         imgPath = path.join(__dirname, "..", submission.annotatedImageUrl);
@@ -245,98 +284,100 @@ submissionRouter.post("/admin/submissions/report/:id", userAuth, async (req, res
       
       if (fs.existsSync(imgPath)) {
         try {
-          // Calculate image dimensions to fit properly
-          const availableWidth = 500;
-          const availableHeight = 300;
-          
-          doc.image(imgPath, {
-            fit: [availableWidth, availableHeight],
+          doc.image(imgPath, margin + 10, currentY, {
+            fit: [maxImageWidth, maxImageHeight],
             align: "center"
           });
-          doc.moveDown(1);
+          currentY += maxImageHeight + 10;
         } catch (imageError) {
           console.error("Error adding image to PDF:", imageError);
-          doc.fontSize(11).font('Helvetica').text("Error loading annotated image.", { align: "center" });
-          doc.moveDown(1);
+          doc.fontSize(9).font('Helvetica')
+             .text("Error loading annotated image.", margin, currentY, { align: "center" });
+          currentY += 15;
         }
       } else {
         console.log("Annotated image not found at:", imgPath);
-        doc.fontSize(11).font('Helvetica').text("Annotated image not available.", { align: "center" });
-        doc.moveDown(1);
+        doc.fontSize(9).font('Helvetica')
+           .text("Annotated image not available.", margin, currentY, { align: "center" });
+        currentY += 15;
       }
     } else {
-      doc.fontSize(11).font('Helvetica').text("No annotated image available.", { align: "center" });
-      doc.moveDown(1);
+      doc.fontSize(9).font('Helvetica')
+         .text("No annotated image available.", margin, currentY, { align: "center" });
+      currentY += 15;
     }
 
-    // --- Treatment Recommendations Legend ---
-    doc.fontSize(14).font('Helvetica-Bold').text("Treatment Recommendations Legend", { underline: true });
-    doc.moveDown(1);
+    // --- Treatment Recommendations Legend (Compact) ---
+    doc.fontSize(12).font('Helvetica-Bold')
+       .text("Treatment Legend", margin, currentY);
+    currentY += 12;
 
     const recommendations = [
-      { text: "Inflamed or Red Gums", color: "red", description: "Indicates gingivitis or periodontal inflammation" },
-      { text: "Braces or Clear Aligner", color: "blue", description: "Orthodontic treatment recommended" },
-      { text: "Receded Gums", color: "orange", description: "Gum recession requiring attention" },
-      { text: "Stains", color: "brown", description: "Dental staining or discoloration" },
-      { text: "Attrition", color: "green", description: "Tooth wear or grinding damage" },
+      { text: "Inflamed Gums", color: "red", desc: "Gingivitis/inflammation" },
+      { text: "Orthodontic", color: "blue", desc: "Braces/aligner needed" },
+      { text: "Gum Recession", color: "orange", desc: "Receded gums" },
+      { text: "Staining", color: "brown", desc: "Discoloration" },
+      { text: "Tooth Wear", color: "green", desc: "Attrition/grinding" },
     ];
 
-    let currentY = doc.y;
+    // Two column layout for legend
+    const itemsPerColumn = Math.ceil(recommendations.length / 2);
     
     recommendations.forEach((rec, index) => {
-      // Check if we need a new page
-      if (currentY > 700) {
-        doc.addPage();
-        currentY = 50;
-      }
+      const isLeftColumn = index < itemsPerColumn;
+      const columnX = isLeftColumn ? leftColumnX : rightColumnX;
+      const itemY = currentY + ((index % itemsPerColumn) * 16);
       
-      // Draw colored indicator square
-      doc.rect(50, currentY, 12, 12).fillAndStroke(rec.color, 'black');
+      // Draw colored indicator square (smaller)
+      doc.rect(columnX, itemY, 8, 8).fillAndStroke(rec.color, 'black');
       
-      // Add recommendation text
+      // Add recommendation text (compact)
       doc.fillColor("black")
-         .fontSize(11)
+         .fontSize(8)
          .font('Helvetica-Bold')
-         .text(rec.text, 70, currentY + 2);
+         .text(rec.text, columnX + 12, itemY);
       
-      // Add description
-      doc.fontSize(10)
+      // Add description on same line
+      doc.fontSize(7)
          .font('Helvetica')
-         .text(rec.description, 70, currentY + 15, { width: 450 });
-      
-      currentY += 35;
+         .text(` - ${rec.desc}`, columnX + 12 + doc.widthOfString(rec.text, { fontSize: 8 }), itemY + 1);
     });
-
-    // --- Disclaimer Section ---
-    doc.moveDown(2);
-    if (doc.y > 650) {
-      doc.addPage();
-    }
     
-    doc.fontSize(12).font('Helvetica-Bold').text("Important Disclaimer", { underline: true });
-    doc.moveDown(0.5);
-    doc.fontSize(10).font('Helvetica')
-       .text("This report is generated for screening purposes only and should not replace professional dental consultation. Please consult with a qualified dentist for proper diagnosis and treatment planning.", {
-         width: 500,
-         align: 'justify'
+    currentY += (itemsPerColumn * 16) + 10;
+
+    // --- Footer Section (Compact) ---
+    // Calculate remaining space for disclaimer
+    const remainingFooterSpace = contentHeight - (currentY - margin);
+    
+    if (remainingFooterSpace > 30) {
+      doc.fontSize(10).font('Helvetica-Bold')
+         .text("Disclaimer", margin, currentY);
+      currentY += 12;
+      
+      const disclaimerText = "This screening report is for reference only. Consult a qualified dentist for proper diagnosis and treatment.";
+      
+      doc.fontSize(8).font('Helvetica')
+         .text(disclaimerText, margin, currentY, {
+           width: contentWidth,
+           align: 'justify'
+         });
+      
+      currentY += 20;
+    }
+
+    // Bottom footer
+    const footerY = pageHeight - margin - 10;
+    doc.fontSize(7)
+       .text(`Generated: ${new Date().toLocaleString()}`, margin, footerY, { 
+         align: 'center',
+         width: contentWidth 
        });
 
-    // --- Footer ---
-    doc.moveDown(1);
-    doc.fontSize(8).text(`Generated on ${new Date().toISOString()}`, { align: 'center' });
-
-    // Finalize PDF
+    // Finalize PDF - IMPORTANT: Only call end() once
     doc.end();
 
-    // Save to file system as well (optional - for record keeping)
+    // Optional: Save to file system (separate instance)
     const fileStream = fs.createWriteStream(filePath);
-    const doc2 = new PDFDocument({ size: "A4", margin: 50 });
-    doc2.pipe(fileStream);
-    
-    // Duplicate the PDF content for file storage (you can extract this to a function)
-    // ... (same content as above)
-    doc2.end();
-
     fileStream.on("finish", async () => {
       try {
         const fileUrl = `http://localhost:8080/uploads/reports/${fileName}`;
@@ -349,10 +390,124 @@ submissionRouter.post("/admin/submissions/report/:id", userAuth, async (req, res
       }
     });
 
+    // Create a separate PDF instance for file saving
+    const filePDF = new PDFDocument({ size: "A4", margin: 40 });
+    filePDF.pipe(fileStream);
+    
+    // Duplicate the same content for file storage
+    currentY = margin;
+    
+    filePDF.fontSize(18).font('Helvetica-Bold')
+           .text("Oral Health Screening Report", margin, currentY, { 
+             align: "center",
+             width: contentWidth 
+           });
+    currentY += 25;
+    
+    filePDF.fontSize(9).font('Helvetica')
+           .text("Professional Dental Analysis", margin, currentY, { 
+             align: "center",
+             width: contentWidth 
+           });
+    currentY += 20;
+
+    filePDF.fontSize(12).font('Helvetica-Bold')
+           .text("Patient Information", margin, currentY);
+    currentY += 15;
+    
+    filePDF.fontSize(9).font('Helvetica');
+    filePDF.text(`Patient ID: ${submission.patientId || 'N/A'}`, leftColumnX, currentY);
+    filePDF.text(`Report Date: ${reportDate}`, rightColumnX, currentY);
+    currentY += 12;
+    
+    filePDF.text(`Name: ${submission.name || 'N/A'}`, leftColumnX, currentY);
+    filePDF.text(`Status: ${submission.status || 'N/A'}`, rightColumnX, currentY);
+    currentY += 12;
+    
+    filePDF.text(`Email: ${submission.email || 'N/A'}`, leftColumnX, currentY);
+    currentY += 15;
+    
+    if (submission.note && submission.note.trim()) {
+      const maxNoteLength = 100;
+      const truncatedNote = submission.note.length > maxNoteLength 
+        ? submission.note.substring(0, maxNoteLength) + "..."
+        : submission.note;
+      
+      filePDF.text(`Note: ${truncatedNote}`, margin, currentY, { width: contentWidth });
+      currentY += 15;
+    }
+
+    filePDF.fontSize(12).font('Helvetica-Bold')
+           .text("Clinical Analysis", margin, currentY);
+    currentY += 15;
+
+    if (submission.annotatedImageUrl) {
+      let imgPath;
+      if (submission.annotatedImageUrl.startsWith('uploads/')) {
+        imgPath = path.join(__dirname, "..", submission.annotatedImageUrl);
+      } else {
+        imgPath = path.join(__dirname, "../uploads", submission.annotatedImageUrl);
+      }
+      
+      if (fs.existsSync(imgPath)) {
+        try {
+          filePDF.image(imgPath, margin + 10, currentY, {
+            fit: [maxImageWidth, maxImageHeight],
+            align: "center"
+          });
+          currentY += maxImageHeight + 10;
+        } catch (imageError) {
+          filePDF.fontSize(9).font('Helvetica')
+                 .text("Error loading annotated image.", margin, currentY, { align: "center" });
+          currentY += 15;
+        }
+      }
+    }
+
+    filePDF.fontSize(12).font('Helvetica-Bold')
+           .text("Treatment Legend", margin, currentY);
+    currentY += 12;
+
+    recommendations.forEach((rec, index) => {
+      const isLeftColumn = index < itemsPerColumn;
+      const columnX = isLeftColumn ? leftColumnX : rightColumnX;
+      const itemY = currentY + ((index % itemsPerColumn) * 16);
+      
+      filePDF.rect(columnX, itemY, 8, 8).fillAndStroke(rec.color, 'black');
+      filePDF.fillColor("black")
+             .fontSize(8)
+             .font('Helvetica-Bold')
+             .text(rec.text, columnX + 12, itemY);
+      filePDF.fontSize(7)
+             .font('Helvetica')
+             .text(` - ${rec.desc}`, columnX + 12 + filePDF.widthOfString(rec.text, { fontSize: 8 }), itemY + 1);
+    });
+    
+    currentY += (itemsPerColumn * 16) + 10;
+
+    if (contentHeight - (currentY - margin) > 30) {
+      filePDF.fontSize(10).font('Helvetica-Bold')
+             .text("Disclaimer", margin, currentY);
+      currentY += 12;
+      
+      filePDF.fontSize(8).font('Helvetica')
+             .text("This screening report is for reference only. Consult a qualified dentist for proper diagnosis and treatment.", margin, currentY, {
+               width: contentWidth,
+               align: 'justify'
+             });
+    }
+
+    filePDF.fontSize(7)
+           .text(`Generated: ${new Date().toLocaleString()}`, margin, footerY, { 
+             align: 'center',
+             width: contentWidth 
+           });
+
+    filePDF.end();
+
   } catch (error) {
     console.error("Error generating report:", error);
     
-    // Ensure response is sent even if there's an error
     if (!res.headersSent) {
       res.status(500).json({ 
         message: "Error generating report", 

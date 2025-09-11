@@ -4,7 +4,9 @@ import { useDispatch } from "react-redux";
 import { setAuth } from "../redux/slices/authSlice"
 import { useNavigate } from "react-router-dom";
 
+
 export default function Login() {
+  
   const [email, setEmailId] = useState("");
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -21,6 +23,7 @@ export default function Login() {
     if (isLoginForm) {
       // Login
       try {
+        const BASE_URL = process.env.REACT_APP_BASE_URL;
         const res = await axios.post(
           "http://localhost:8080/api/login",
           { email, password },
