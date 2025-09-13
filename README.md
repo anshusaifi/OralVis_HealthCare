@@ -1,4 +1,4 @@
-OralVis – AI-Powered Oral Health Analysis Platform
+OralVis – Oral Health Analysis Platform
 
 OralVis is a full-stack web application that allows patients to upload oral health images, receive AI-assisted annotation reports, and enables admins/doctors to review, annotate, and generate structured PDF health reports.
 
@@ -133,4 +133,5 @@ Uploaded → Patient submits images.
 Annotated → Doctor/admin reviews and annotates.
 
 Report Generated → PDF is created for the patient.
+
 
